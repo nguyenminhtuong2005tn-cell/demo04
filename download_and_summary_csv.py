@@ -1,34 +1,61 @@
-import requests
 import csv
-from io import StringIO
+import urllib.request
+import ssl
 
-# Download CSV data
-url = 'https://data.kcg.gov.tw/File/DirectDownload/80bbbbd3-9ee4-4244-98e9-b4c08deda91b'
-response = requests.get(url)
-response.raise_for_status()
-response.encoding = 'utf-8'
-csv_text = response.text
+# 1. 設定新北市政府開放資料 API 網址
+url = "https://data.ntpc.gov.tw/api/datasets/781b822e-214a-4b9a-b4db-32c9f4626d98/csv/file"
 
-# Parse CSV
-reader = csv.reader(StringIO(csv_text))
-rows = list(reader)
+try:
+    # 2. 忽略 SSL 憑證檢查
+    context = ssl._create_unverified_context()
+    
+    # 3. 發送 Header 請求並讀取網路 CSV 資料
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, context=context) as response:
+        # 使用 utf-8-sig 可以自動移除檔案開頭可能存在的 BOM 隱藏字元
+        html_content = response.read().decode('utf-8-sig')
+        
+        # 4. 解析 CSV 內容
+        lines = html_content.strip().split('\n')
+        csv_data = list(csv.reader(lines))
+        
+        # 取得標題列與資料列
+        header = [col.strip() for col in csv_data[0]] # 移除欄位名稱前後的空白
+        records = csv_data[1:]
+        
+        # 預設索引位置（若找不到欄位時的安全安全防護）
+        idx_title = 0
+        idx_type = 1
+        idx_start = 2
+        idx_end = 3
+        idx_pub = 4
+        idx_link = 5
+        idx_desc = 6
+        
+        # 動態尋找欄位，包含關鍵字即可，避免完全比對出錯
+        for i, col_name in enumerate(header):
+            if "標題" in col_name: idx_title = i
+            elif "類型" in col_name: idx_type = i
+            elif "開始日期" in col_name: idx_start = i
+            elif "結束日期" in col_name: idx_end = i
+            elif "發佈時間" in col_name or "發布時間" in col_name: idx_pub = i
+            elif "連結" in col_name: idx_link = i
+            elif "簡介" in col_name: idx_desc = i
 
-# Summary
-row_count = len(rows) - 1  # Exclude header
-col_count = len(rows[0]) if rows else 0
-print(f"總列數 (Total rows): {row_count}")
-print(f"欄位數 (Column count): {col_count}\n")
+        # 5. 依序顯示所有資料項目
+        for index, row in enumerate(records, start=1):
+            if len(row) < len(header):
+                continue
+                
+            print(f"==== 第{index}筆資料 ====")
+            print(f"【標題】 {row[idx_title]}")
+            print(f"【類型】 {row[idx_type]}")
+            print(f"【開始日期】 {row[idx_start]}")
+            print(f"【結束日期】 {row[idx_end]}")
+            print(f"【發佈時間】 {row[idx_pub]}")
+            print(f"【連結】 {row[idx_link]}")
+            print(f"【簡介】 {row[idx_desc]}")
+            print() # 輸出空白行以區隔每筆資料
 
-# Field labels
-labels = [
-    "Id", "Status", "Name", "Description", "Participation", "Location", "Add", "Tel", "Org", "Start", "End", "Cycle", "Noncycle", "Map", "Px", "Py", "Travellinginfo", "Parkinginfo", "Charge", "Remarks", "Changetime"
-]
-
-# Print 1st record with labels
-if row_count > 0:
-    first_record = rows[1]
-    print("第1筆資料 (First record):")
-    for label, value in zip(labels, first_record):
-        print(f"{label}: {value}")
-else:
-    print("No data rows found.")
+except Exception as e:
+    print(f"程式執行發生錯誤: {e}")

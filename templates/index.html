@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>作業12_Flask架構</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        .block { border-bottom: 1px solid #ccc; padding: 20px 0; }
+        .index { background: #333; color: white; padding: 5px 15px; display: inline-block; font-weight: bold; }
+        a { color: blue; text-decoration: none; }
+    </style>
+</head>
+<body>
+    {% for item in data_list %}
+    <div class="block">
+        <div class="index">==== 第 {{ loop.index }} 筆資料 ====</div>
+        <p>【標題】 {{ item.title }}</p>
+        <p>【類型】 {{ item.type }}</p>
+        <p>【開始日期】 {{ item.start_date }}</p>
+        <p>【結束日期】 {{ item.end_date }}</p>
+        <p>【發佈時間】 {{ item.publish_time }}</p>
+        <p>【連結】 <a href="{{ item.link }}" target="_blank">{{ item.link }}</a></p>
+        <p>【簡介】 {{ item.desc }}</p>
+    </div>
+    {% endfor %}
+</body>
+</html>
